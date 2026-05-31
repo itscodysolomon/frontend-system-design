@@ -1,307 +1,596 @@
-const lessons = [
-  {
-    title: "What frontend system design is",
-    level: "foundation",
-    goal: "Learn the scope: user flows, browser constraints, app architecture, and UX reliability.",
-    topics: ["frontend vs backend scope", "requirements", "tradeoffs"],
-    action: "Explain how a frontend design answer differs from a backend design answer."
-  },
-  {
-    title: "Requirements and user flows",
-    level: "foundation",
-    goal: "Start interviews by clarifying users, devices, core actions, permissions, and non-goals.",
-    topics: ["personas", "happy path", "edge cases"],
-    action: "Write the top five requirements for a checkout frontend."
-  },
-  {
-    title: "Component and route architecture",
-    level: "foundation",
-    goal: "Break a product into routes, features, shared components, layout, and data boundaries.",
-    topics: ["feature folders", "composition", "routing"],
-    action: "Sketch a folder structure for a large analytics dashboard."
-  },
-  {
-    title: "State ownership and data flow",
-    level: "foundation",
-    goal: "Separate local UI state, URL state, global state, server state, and cache state.",
-    topics: ["React state", "server state", "optimistic updates"],
-    action: "Decide where search filters, auth, cart, and API results should live."
-  },
-  {
-    title: "Data fetching and caching",
-    level: "performance",
-    goal: "Design fetching, pagination, retries, invalidation, stale data, and realtime updates.",
-    topics: ["TanStack Query", "SWR", "pagination"],
-    action: "Design stale-while-revalidate behavior for a notifications panel."
-  },
-  {
-    title: "Rendering and performance",
-    level: "performance",
-    goal: "Improve startup, navigation, interaction speed, and perceived performance.",
-    topics: ["code splitting", "virtualization", "SSR/CSR/SSG"],
-    action: "Optimize a table with 50,000 rows and frequent updates."
-  },
-  {
-    title: "Resilience and accessibility",
-    level: "senior",
-    goal: "Handle loading, empty, error, offline, keyboard, screen reader, and slow-network states.",
-    topics: ["error boundaries", "a11y", "offline UX"],
-    action: "Design error handling for a payment form without losing user input."
-  },
-  {
-    title: "Scaling teams and systems",
-    level: "senior",
-    goal: "Use design systems, micro frontends, testing, feature flags, and observability wisely.",
-    topics: ["design systems", "observability", "micro frontends"],
-    action: "Plan how 12 teams could safely share a component library."
+(function() {
+  'use strict';
+
+  const STORAGE_KEY = 'fsd-academy-progress';
+  const NOTES_KEY = 'fsd-academy-notes';
+  const EXERCISES_KEY = 'fsd-academy-exercises';
+
+  let state = {
+    currentView: 'dashboard',
+    currentModule: null,
+    currentInterview: null,
+    progress: loadProgress(),
+    notes: loadNotes(),
+    exercises: loadExercises()
+  };
+
+  function loadProgress() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    } catch { return {}; }
   }
-];
 
-const architectureLayers = [
-  {
-    id: "ux",
-    label: "Layer 1",
-    title: "User flows",
-    body: "Start with the product experience: who uses it, what they need to do, and what must work on mobile, desktop, slow networks, and assistive tech.",
-    bullets: ["Core screens and journeys", "Loading, empty, and error states", "Accessibility and responsive behavior"]
-  },
-  {
-    id: "ui",
-    label: "Layer 2",
-    title: "UI composition",
-    body: "Break the experience into pages, layouts, feature components, reusable primitives, and design-system pieces.",
-    bullets: ["Component boundaries", "Shared vs feature-specific UI", "Theming and consistency"]
-  },
-  {
-    id: "state",
-    label: "Layer 3",
-    title: "State model",
-    body: "Decide ownership for local UI state, URL state, global state, server state, and cached state so the app stays predictable.",
-    bullets: ["Local vs global state", "Server-state cache", "Optimistic and realtime updates"]
-  },
-  {
-    id: "data",
-    label: "Layer 4",
-    title: "Data and APIs",
-    body: "Define how the frontend talks to backend services and how it handles partial failure, pagination, auth, and data freshness.",
-    bullets: ["API contracts", "Pagination and filtering", "Retries and invalidation"]
-  },
-  {
-    id: "perf",
-    label: "Layer 5",
-    title: "Performance",
-    body: "Make the app feel fast by controlling bundles, rendering cost, network waterfalls, expensive lists, images, and hydration.",
-    bullets: ["Code splitting", "Virtualization", "SSR, SSG, CSR, streaming"]
-  },
-  {
-    id: "ops",
-    label: "Layer 6",
-    title: "Operations at scale",
-    body: "For senior answers, include testing, analytics, feature flags, observability, ownership, and safe rollout strategies.",
-    bullets: ["Testing strategy", "Error monitoring", "Feature flags and rollbacks"]
+  function saveProgress() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.progress));
   }
-];
 
-const prompts = [
-  {
-    text: "Design a scalable autocomplete search UI.",
-    hints: ["Clarify latency, ranking, keyboard support, and mobile behavior.", "Discuss debouncing, request cancellation, caching, and stale results.", "Cover empty, loading, error, and slow-network states."]
-  },
-  {
-    text: "Design the frontend architecture for a Slack-like chat app.",
-    hints: ["Separate channels, messages, composer, search, notifications, and presence.", "Discuss WebSockets, pagination, optimistic sends, and offline drafts.", "Mention virtualization for long conversations."]
-  },
-  {
-    text: "Design a dashboard that displays thousands of metrics in real time.",
-    hints: ["Clarify refresh rate and what must be realtime.", "Use virtualization, memoization, aggregation, and streaming updates.", "Discuss alerting, filters in URL state, and observability."]
-  },
-  {
-    text: "Design a reusable design system for a large product company.",
-    hints: ["Cover tokens, components, documentation, accessibility, and versioning.", "Discuss governance and ownership.", "Explain how teams consume updates safely."]
-  },
-  {
-    text: "Design the frontend for an e-commerce checkout flow.",
-    hints: ["Prioritize reliability, validation, persistence, security, and error recovery.", "Discuss state ownership for cart, address, payment, and promos.", "Cover accessibility and preventing duplicate submissions."]
-  },
-  {
-    text: "Design a collaborative document editor from the frontend perspective.",
-    hints: ["Clarify collaboration model, presence, conflict handling, and offline edits.", "Discuss editor state, network sync, and optimistic UI.", "Mention performance for large documents."]
+  function loadNotes() {
+    try {
+      return JSON.parse(localStorage.getItem(NOTES_KEY)) || {};
+    } catch { return {}; }
   }
-];
 
-const moduleGrid = document.querySelector("#moduleGrid");
-const progressBar = document.querySelector("#progressBar");
-const progressText = document.querySelector("#progressText");
-const progressPercent = document.querySelector("#progressPercent");
-const streakCount = document.querySelector("#streakCount");
-const filterButtons = document.querySelectorAll("[data-filter]");
-const diagram = document.querySelector("#diagram");
-const inspector = document.querySelector("#inspector");
-const promptText = document.querySelector("#promptText");
-const hintPanel = document.querySelector("#hintPanel");
-const noteFields = ["requirements", "architectureNotes", "performanceNotes", "tradeoffNotes"];
-let activeFilter = "all";
-let currentPrompt = 0;
+  function saveNotes() {
+    localStorage.setItem(NOTES_KEY, JSON.stringify(state.notes));
+  }
 
-function getCompleted() {
-  return JSON.parse(localStorage.getItem("fsd-v2-progress") || "[]");
-}
+  function loadExercises() {
+    try {
+      return JSON.parse(localStorage.getItem(EXERCISES_KEY)) || {};
+    } catch { return {}; }
+  }
 
-function setCompleted(completed) {
-  localStorage.setItem("fsd-v2-progress", JSON.stringify(completed));
-}
+  function saveExercises() {
+    localStorage.setItem(EXERCISES_KEY, JSON.stringify(state.exercises));
+  }
 
-function renderLessons() {
-  const completed = getCompleted();
-  const visibleLessons = lessons
-    .map((lesson, index) => ({ ...lesson, index }))
-    .filter(lesson => activeFilter === "all" || lesson.level === activeFilter);
+  function getCompletedCount() {
+    return Object.values(state.progress).filter(v => v === true).length;
+  }
 
-  moduleGrid.innerHTML = visibleLessons.map(lesson => {
-    const done = completed.includes(lesson.index);
+  function getProgressPercent() {
+    return Math.round((getCompletedCount() / MODULES.length) * 100);
+  }
+
+  function getNextModule() {
+    for (let m of MODULES) {
+      if (!state.progress[m.id]) return m;
+    }
+    return null;
+  }
+
+  // Navigation
+  function navigate(view, data) {
+    state.currentView = view;
+    if (data) {
+      if (data.moduleId) state.currentModule = data.moduleId;
+      if (data.interviewId) state.currentInterview = data.interviewId;
+    }
+    render();
+    window.scrollTo(0, 0);
+    updateNavActive();
+  }
+
+  function updateNavActive() {
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.classList.toggle('active', link.dataset.navigate === state.currentView);
+    });
+  }
+
+  // Render router
+  function render() {
+    const app = document.getElementById('app');
+    switch (state.currentView) {
+      case 'dashboard': app.innerHTML = renderDashboard(); break;
+      case 'modules': app.innerHTML = renderModuleList(); break;
+      case 'lesson': app.innerHTML = renderLesson(); break;
+      case 'interviews': app.innerHTML = renderInterviews(); break;
+      case 'interview-detail': app.innerHTML = renderInterviewDetail(); break;
+      case 'case-studies': app.innerHTML = renderCaseStudies(); break;
+      default: app.innerHTML = renderDashboard();
+    }
+    attachEventListeners();
+  }
+
+  // Dashboard
+  function renderDashboard() {
+    const completed = getCompletedCount();
+    const percent = getProgressPercent();
+    const next = getNextModule();
+
     return `
-      <article class="module ${done ? "done" : ""}">
-        <div class="module-header">
-          <span class="module-number">Lesson ${lesson.index + 1}</span>
-          <span class="tag">${lesson.level}</span>
+      <div class="fade-in">
+        <div class="dashboard-header">
+          <h1>Frontend System Design Academy</h1>
+          <p>Master frontend architecture from fundamentals to senior-level interviews</p>
         </div>
-        <h3>${lesson.title}</h3>
-        <p>${lesson.goal}</p>
-        <ul>${lesson.topics.map(topic => `<li>${topic}</li>`).join("")}</ul>
-        <p><strong>Action:</strong> ${lesson.action}</p>
-        <label class="complete-row">
-          <input type="checkbox" data-index="${lesson.index}" ${done ? "checked" : ""} />
-          Mark complete
-        </label>
-      </article>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">${percent}%</div>
+            <div class="stat-label">Overall Progress</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${completed}/${MODULES.length}</div>
+            <div class="stat-label">Modules Completed</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${MODULES.length * 4}</div>
+            <div class="stat-label">Quiz Questions</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">6</div>
+            <div class="stat-label">Interview Walkthroughs</div>
+          </div>
+        </div>
+
+        <div class="progress-section">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <strong>Course Progress</strong>
+            <span style="color:var(--text-secondary);font-size:0.85rem;">${completed} of ${MODULES.length} modules</span>
+          </div>
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" style="width:${percent}%"></div>
+          </div>
+        </div>
+
+        <div class="quick-actions">
+          ${next ? `
+          <div class="action-card" data-action="continue">
+            <div class="action-icon">▶️</div>
+            <div class="action-text">
+              <h3>Continue Learning</h3>
+              <p>Module ${next.id}: ${next.title}</p>
+            </div>
+          </div>` : `
+          <div class="action-card" data-action="modules">
+            <div class="action-icon">🎉</div>
+            <div class="action-text">
+              <h3>All Complete!</h3>
+              <p>Review any module</p>
+            </div>
+          </div>`}
+          <div class="action-card" data-action="interviews">
+            <div class="action-icon">🎯</div>
+            <div class="action-text">
+              <h3>Interview Practice</h3>
+              <p>6 complete walkthroughs</p>
+            </div>
+          </div>
+          <div class="action-card" data-action="case-studies">
+            <div class="action-icon">📚</div>
+            <div class="action-text">
+              <h3>Case Studies</h3>
+              <p>Real-world design examples</p>
+            </div>
+          </div>
+          <div class="action-card" data-action="reset">
+            <div class="action-icon">🔄</div>
+            <div class="action-text">
+              <h3>Reset Progress</h3>
+              <p>Start fresh</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-header">
+          <h2>Learning Track</h2>
+          <p>12 modules from fundamentals to interview mastery</p>
+        </div>
+        <div class="modules-grid">
+          ${MODULES.map(m => renderModuleCard(m)).join('')}
+        </div>
+      </div>
     `;
-  }).join("");
-  updateProgress();
-}
-
-function updateProgress() {
-  const completed = getCompleted();
-  const count = completed.length;
-  const percent = Math.round((count / lessons.length) * 100);
-  progressBar.style.width = `${percent}%`;
-  progressText.textContent = `${count} of ${lessons.length} lessons completed`;
-  progressPercent.textContent = `${percent}%`;
-  streakCount.textContent = count;
-}
-
-function renderDiagram(activeId = "ux") {
-  diagram.innerHTML = architectureLayers.map(layer => `
-    <button class="diagram-node ${layer.id === activeId ? "active" : ""}" data-layer="${layer.id}" type="button">
-      <span>${layer.label}</span>
-      <strong>${layer.title}</strong>
-    </button>
-  `).join("");
-  renderInspector(activeId);
-}
-
-function renderInspector(activeId) {
-  const layer = architectureLayers.find(item => item.id === activeId) || architectureLayers[0];
-  inspector.innerHTML = `
-    <span class="card-label">${layer.label}</span>
-    <h3>${layer.title}</h3>
-    <p>${layer.body}</p>
-    <ul>${layer.bullets.map(item => `<li>${item}</li>`).join("")}</ul>
-  `;
-}
-
-function renderPrompt(index = currentPrompt) {
-  const prompt = prompts[index];
-  promptText.textContent = prompt.text;
-  hintPanel.hidden = true;
-  hintPanel.innerHTML = `
-    <span class="card-label">Hints</span>
-    <ul>${prompt.hints.map(hint => `<li>${hint}</li>`).join("")}</ul>
-  `;
-}
-
-moduleGrid.addEventListener("change", event => {
-  if (!event.target.matches("input[type='checkbox']")) return;
-  const index = Number(event.target.dataset.index);
-  const completed = new Set(getCompleted());
-  event.target.checked ? completed.add(index) : completed.delete(index);
-  setCompleted([...completed].sort((a, b) => a - b));
-  renderLessons();
-});
-
-filterButtons.forEach(button => {
-  button.addEventListener("click", () => {
-    filterButtons.forEach(item => item.classList.remove("active"));
-    button.classList.add("active");
-    activeFilter = button.dataset.filter;
-    renderLessons();
-  });
-});
-
-diagram.addEventListener("click", event => {
-  const button = event.target.closest("[data-layer]");
-  if (!button) return;
-  renderDiagram(button.dataset.layer);
-});
-
-document.querySelector("#newPrompt").addEventListener("click", () => {
-  const next = (currentPrompt + 1 + Math.floor(Math.random() * (prompts.length - 1))) % prompts.length;
-  currentPrompt = next;
-  renderPrompt();
-});
-
-document.querySelector("#showHints").addEventListener("click", () => {
-  hintPanel.hidden = !hintPanel.hidden;
-});
-
-document.querySelector("#resetProgress").addEventListener("click", () => {
-  localStorage.removeItem("fsd-v2-progress");
-  renderLessons();
-});
-
-noteFields.forEach(id => {
-  const field = document.querySelector(`#${id}`);
-  field.value = localStorage.getItem(`fsd-note-${id}`) || "";
-  field.addEventListener("input", () => localStorage.setItem(`fsd-note-${id}`, field.value));
-});
-
-document.querySelector("#clearNotes").addEventListener("click", () => {
-  noteFields.forEach(id => {
-    localStorage.removeItem(`fsd-note-${id}`);
-    document.querySelector(`#${id}`).value = "";
-  });
-  document.querySelector("#copyStatus").textContent = "Notes cleared.";
-});
-
-document.querySelector("#copyNotes").addEventListener("click", async () => {
-  const answer = [
-    ["Requirements", document.querySelector("#requirements").value],
-    ["Architecture", document.querySelector("#architectureNotes").value],
-    ["Performance", document.querySelector("#performanceNotes").value],
-    ["Tradeoffs", document.querySelector("#tradeoffNotes").value]
-  ].map(([title, body]) => `${title}\n${body || "-"}`).join("\n\n");
-
-  try {
-    await navigator.clipboard.writeText(answer);
-    document.querySelector("#copyStatus").textContent = "Copied to clipboard.";
-  } catch {
-    document.querySelector("#copyStatus").textContent = "Copy failed. Select the notes manually.";
   }
-});
 
-const navToggle = document.querySelector(".nav-toggle");
-const navMenu = document.querySelector("#nav-menu");
-navToggle.addEventListener("click", () => {
-  const open = navMenu.classList.toggle("open");
-  navToggle.setAttribute("aria-expanded", open.toString());
-});
+  function renderModuleCard(m) {
+    const isComplete = state.progress[m.id] === true;
+    return `
+      <div class="module-card ${isComplete ? 'completed' : ''}" data-module="${m.id}">
+        <div class="module-number">${isComplete ? '✓' : m.id}</div>
+        <div class="module-info">
+          <h3>${m.icon} ${m.title}</h3>
+          <p>${m.description}</p>
+        </div>
+        <span class="module-status ${isComplete ? 'completed' : 'not-started'}">
+          ${isComplete ? 'Complete' : 'Start'}
+        </span>
+      </div>
+    `;
+  }
 
-document.querySelectorAll("#nav-menu a").forEach(link => {
-  link.addEventListener("click", () => {
-    navMenu.classList.remove("open");
-    navToggle.setAttribute("aria-expanded", "false");
+  // Module List
+  function renderModuleList() {
+    return `
+      <div class="fade-in">
+        <div class="section-header">
+          <h2>All Modules</h2>
+          <p>Complete each module to master frontend system design</p>
+        </div>
+        <div class="modules-grid">
+          ${MODULES.map(m => renderModuleCard(m)).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // Lesson View
+  function renderLesson() {
+    const m = MODULES.find(mod => mod.id === state.currentModule);
+    if (!m) return '<p>Module not found</p>';
+    const isComplete = state.progress[m.id] === true;
+
+    return `
+      <div class="fade-in">
+        <div class="lesson-header">
+          <a class="lesson-back" data-action="back-to-modules">← Back to Modules</a>
+          <h1>${m.icon} Module ${m.id}: ${m.title}</h1>
+          <div class="lesson-meta">
+            <span>📖 ~15 min read</span>
+            <span>📝 Quiz: ${m.quiz.length} questions</span>
+            <span>💪 Practical exercise</span>
+          </div>
+        </div>
+
+        <div class="lesson-content">
+          ${renderLessonSection('Learning Objectives', renderObjectives(m.objectives), true)}
+          ${renderLessonSection('Overview', m.content.overview, true)}
+          ${renderLessonSection('Lesson Content', m.content.lesson, true)}
+          ${renderLessonSection('Architecture Diagram', `<div class="diagram-container">${m.content.diagram}</div>`, false)}
+          ${renderLessonSection('Key Tradeoffs', m.content.tradeoffs, false)}
+          ${renderLessonSection('Common Mistakes', m.content.mistakes, false)}
+          ${renderLessonSection('Interview Angle', m.content.interviewAngle, false)}
+          ${renderLessonSection('Practical Exercise', renderExercise(m), false)}
+          ${renderLessonSection('Quiz', renderQuiz(m), false)}
+          ${renderLessonSection('Notes', renderNotes(m.id), false)}
+
+          <div class="completion-actions">
+            ${isComplete
+              ? `<button class="btn btn-secondary" data-action="uncomplete" data-module-id="${m.id}">↩ Mark Incomplete</button>`
+              : `<button class="btn btn-success btn-lg" data-action="complete" data-module-id="${m.id}">✓ Mark Module Complete</button>`
+            }
+            ${m.id < MODULES.length
+              ? `<button class="btn btn-primary" data-action="next-module" data-next="${m.id + 1}">Next Module →</button>`
+              : `<button class="btn btn-primary" data-action="interviews-nav">🎯 Practice Interviews</button>`
+            }
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderObjectives(objectives) {
+    return `<ul>${objectives.map(o => `<li>${o}</li>`).join('')}</ul>`;
+  }
+
+  function renderLessonSection(title, content, openByDefault) {
+    return `
+      <div class="lesson-section ${openByDefault ? 'open' : ''}">
+        <div class="lesson-section-header">
+          <span>${title}</span>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="lesson-section-body">
+          ${content}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderExercise(m) {
+    const saved = state.exercises[m.id] || '';
+    return `
+      <div class="exercise-container">
+        <h4>Exercise Prompt</h4>
+        <p>${m.exercise.prompt}</p>
+        <button class="reveal-btn" data-reveal="hint-${m.id}">Show Hint</button>
+        <div class="reveal-content" id="hint-${m.id}">
+          <p><strong>Hint:</strong> ${m.exercise.hint}</p>
+        </div>
+        <textarea placeholder="Write your answer here... Your response is saved automatically." data-exercise="${m.id}">${saved}</textarea>
+      </div>
+    `;
+  }
+
+  function renderQuiz(m) {
+    return `
+      <div class="quiz-container" data-quiz-module="${m.id}">
+        ${m.quiz.map((q, i) => `
+          <div class="quiz-question" data-question="${i}">
+            <p>${i + 1}. ${q.question}</p>
+            <div class="quiz-options">
+              ${q.options.map((opt, j) => `
+                <div class="quiz-option" data-question-idx="${i}" data-option-idx="${j}">${opt}</div>
+              `).join('')}
+            </div>
+          </div>
+        `).join('')}
+        <button class="btn btn-primary quiz-submit" data-action="check-quiz" data-module-id="${m.id}">Check Answers</button>
+        <div class="quiz-result" id="quiz-result-${m.id}" style="display:none;"></div>
+      </div>
+    `;
+  }
+
+  function renderNotes(moduleId) {
+    const saved = state.notes[moduleId] || '';
+    return `
+      <div class="notes-container">
+        <label>Your Notes (auto-saved)</label>
+        <textarea placeholder="Take notes as you study this module..." data-notes="${moduleId}">${saved}</textarea>
+      </div>
+    `;
+  }
+
+  // Interviews
+  function renderInterviews() {
+    return `
+      <div class="fade-in">
+        <div class="section-header">
+          <h2>🎯 Interview Practice</h2>
+          <p>Complete frontend system design walkthroughs for common interview questions</p>
+        </div>
+        <div class="interview-cards">
+          ${INTERVIEW_WALKTHROUGHS.map(w => `
+            <div class="interview-card" data-interview="${w.id}">
+              <h3>${w.title}</h3>
+              <p>${w.description}</p>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderInterviewDetail() {
+    const w = INTERVIEW_WALKTHROUGHS.find(i => i.id === state.currentInterview);
+    if (!w) return '<p>Interview not found</p>';
+
+    const sections = [
+      { title: 'Requirements', content: w.content.requirements },
+      { title: 'High-Level Architecture', content: w.content.architecture },
+      { title: 'Component Structure', content: w.content.components },
+      { title: 'State Strategy', content: w.content.stateStrategy },
+      { title: 'API Strategy', content: w.content.apiStrategy },
+      { title: 'Performance Strategy', content: w.content.performance },
+      { title: 'Accessibility', content: w.content.accessibility },
+      { title: 'Tradeoffs', content: w.content.tradeoffs },
+      { title: 'Summary', content: w.content.summary },
+    ];
+
+    return `
+      <div class="fade-in">
+        <div class="lesson-header">
+          <a class="lesson-back" data-action="back-to-interviews">← Back to Interviews</a>
+          <h1>${w.title}</h1>
+          <p style="color:var(--text-secondary);margin-top:0.5rem;">${w.description}</p>
+        </div>
+        <div class="lesson-content">
+          ${sections.map((s, i) => renderLessonSection(s.title, s.content, i < 3)).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  // Case Studies
+  function renderCaseStudies() {
+    return `
+      <div class="fade-in">
+        <div class="section-header">
+          <h2>📚 Case Studies</h2>
+          <p>Apply your knowledge with these practical scenarios</p>
+        </div>
+        <div class="interview-cards">
+          <div class="interview-card" data-interview="netflix">
+            <h3>🎬 Netflix: Content Platform</h3>
+            <p>How to design a video streaming frontend with personalization, adaptive playback, and content discovery at scale.</p>
+          </div>
+          <div class="interview-card" data-interview="slack">
+            <h3>💬 Slack: Real-Time Messaging</h3>
+            <p>Designing a real-time chat application with presence, threads, and offline support.</p>
+          </div>
+          <div class="interview-card" data-interview="ecommerce">
+            <h3>🛒 Ecommerce: Shopping Platform</h3>
+            <p>Building a fast, SEO-friendly shopping experience with cart persistence and checkout optimization.</p>
+          </div>
+          <div class="interview-card" data-interview="analytics">
+            <h3>📊 Analytics: Data Dashboard</h3>
+            <p>Creating a real-time analytics dashboard with independent widgets and large dataset rendering.</p>
+          </div>
+          <div class="interview-card" data-interview="youtube">
+            <h3>📺 YouTube: Video Platform</h3>
+            <p>Designing a media-heavy platform balancing SEO, performance, and rich interactions.</p>
+          </div>
+          <div class="interview-card" data-interview="collaborative-editor">
+            <h3>📝 Google Docs: Collaborative Editor</h3>
+            <p>Tackling the hardest frontend problem: real-time collaborative editing with CRDTs.</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Event Listeners
+  function attachEventListeners() {
+    // Module cards
+    document.querySelectorAll('.module-card[data-module]').forEach(card => {
+      card.addEventListener('click', () => {
+        navigate('lesson', { moduleId: parseInt(card.dataset.module) });
+      });
+    });
+
+    // Interview cards
+    document.querySelectorAll('.interview-card[data-interview]').forEach(card => {
+      card.addEventListener('click', () => {
+        navigate('interview-detail', { interviewId: card.dataset.interview });
+      });
+    });
+
+    // Action cards
+    document.querySelectorAll('[data-action]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        handleAction(el.dataset.action, el.dataset);
+      });
+    });
+
+    // Section toggle
+    document.querySelectorAll('.lesson-section-header').forEach(header => {
+      header.addEventListener('click', () => {
+        header.parentElement.classList.toggle('open');
+      });
+    });
+
+    // Quiz options
+    document.querySelectorAll('.quiz-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        const siblings = opt.parentElement.querySelectorAll('.quiz-option');
+        siblings.forEach(s => s.classList.remove('selected'));
+        opt.classList.add('selected');
+      });
+    });
+
+    // Reveal buttons
+    document.querySelectorAll('.reveal-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = document.getElementById(btn.dataset.reveal);
+        if (target) target.classList.toggle('visible');
+      });
+    });
+
+    // Notes auto-save
+    document.querySelectorAll('[data-notes]').forEach(textarea => {
+      textarea.addEventListener('input', debounce(() => {
+        state.notes[textarea.dataset.notes] = textarea.value;
+        saveNotes();
+      }, 500));
+    });
+
+    // Exercise auto-save
+    document.querySelectorAll('[data-exercise]').forEach(textarea => {
+      textarea.addEventListener('input', debounce(() => {
+        state.exercises[textarea.dataset.exercise] = textarea.value;
+        saveExercises();
+      }, 500));
+    });
+  }
+
+  function handleAction(action, data) {
+    switch (action) {
+      case 'continue': {
+        const next = getNextModule();
+        if (next) navigate('lesson', { moduleId: next.id });
+        break;
+      }
+      case 'modules':
+        navigate('modules');
+        break;
+      case 'interviews':
+      case 'interviews-nav':
+        navigate('interviews');
+        break;
+      case 'case-studies':
+        navigate('case-studies');
+        break;
+      case 'reset':
+        if (confirm('Reset all progress, notes, and exercise answers? This cannot be undone.')) {
+          state.progress = {};
+          state.notes = {};
+          state.exercises = {};
+          saveProgress();
+          saveNotes();
+          saveExercises();
+          render();
+        }
+        break;
+      case 'complete':
+        state.progress[parseInt(data.moduleId)] = true;
+        saveProgress();
+        render();
+        break;
+      case 'uncomplete':
+        delete state.progress[parseInt(data.moduleId)];
+        saveProgress();
+        render();
+        break;
+      case 'next-module':
+        navigate('lesson', { moduleId: parseInt(data.next) });
+        break;
+      case 'back-to-modules':
+        navigate('modules');
+        break;
+      case 'back-to-interviews':
+        navigate('interviews');
+        break;
+      case 'check-quiz':
+        checkQuiz(parseInt(data.moduleId));
+        break;
+    }
+  }
+
+  function checkQuiz(moduleId) {
+    const m = MODULES.find(mod => mod.id === moduleId);
+    if (!m) return;
+
+    let correct = 0;
+    const questions = document.querySelectorAll(`[data-quiz-module="${moduleId}"] .quiz-question`);
+
+    questions.forEach((qEl, i) => {
+      const selected = qEl.querySelector('.quiz-option.selected');
+      const options = qEl.querySelectorAll('.quiz-option');
+
+      options.forEach((opt, j) => {
+        opt.classList.remove('correct', 'incorrect');
+        if (j === m.quiz[i].correct) {
+          opt.classList.add('correct');
+        }
+      });
+
+      if (selected) {
+        const selectedIdx = parseInt(selected.dataset.optionIdx);
+        if (selectedIdx === m.quiz[i].correct) {
+          correct++;
+        } else {
+          selected.classList.add('incorrect');
+        }
+      }
+    });
+
+    const resultEl = document.getElementById(`quiz-result-${moduleId}`);
+    if (resultEl) {
+      const total = m.quiz.length;
+      const passed = correct >= Math.ceil(total * 0.75);
+      resultEl.style.display = 'block';
+      resultEl.className = `quiz-result ${passed ? 'pass' : 'fail'}`;
+      resultEl.textContent = `${correct}/${total} correct. ${passed ? 'Great job! You passed.' : 'Review the material and try again.'}`;
+    }
+  }
+
+  // Navigation handlers
+  document.querySelectorAll('[data-navigate]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const view = link.dataset.navigate;
+      navigate(view);
+      // Close mobile menu
+      document.getElementById('nav-mobile').classList.remove('open');
+    });
   });
-});
 
-renderLessons();
-renderDiagram();
-renderPrompt();
+  // Mobile menu
+  document.getElementById('nav-menu-btn').addEventListener('click', () => {
+    document.getElementById('nav-mobile').classList.toggle('open');
+  });
+
+  // Utility
+  function debounce(fn, ms) {
+    let timer;
+    return function(...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn.apply(this, args), ms);
+    };
+  }
+
+  // Initial render
+  render();
+})();

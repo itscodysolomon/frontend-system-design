@@ -1,55 +1,49 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Frontend System Design Academy</title>
-<style>
-body{font-family:system-ui;margin:0;background:#0f172a;color:#e2e8f0}
-header{padding:20px;background:#111827;position:sticky;top:0}
-.container{max-width:1000px;margin:auto;padding:20px}
-.card{background:#1e293b;padding:16px;border-radius:12px;margin:12px 0}
-button{padding:8px 12px}
-.lesson{display:none}
-.lesson.active{display:block}
-</style></head>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend System Design Academy</title>
+    <meta name="description" content="Master frontend system design from beginner to senior interview level. Free, open-source learning platform.">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏗️</text></svg>">
+</head>
 <body>
-<header><h1>Frontend System Design Academy</h1><div id="progress"></div></header>
-<div class="container">
-<div class="card">
-<h2>Learning Track</h2>
-<ol id="mods"></ol>
-</div>
-<div id="content"></div>
-</div>
-<script>
-const modules=[
-["Frontend Architecture",`<h3>Goals</h3><p>Learn feature-based architecture, separation of concerns, scalability, and ownership boundaries.</p><h3>Interview Focus</h3><p>Design a large ecommerce frontend.</p><h3>Exercise</h3><p>Create folders for auth, products, cart, shared UI.</p>`],
-["State Management",`<p>Local state, Context, Redux, Zustand, React Query. Learn server vs client state and tradeoffs.</p>`],
-["API Layer Design",`<p>REST, GraphQL, BFF pattern, error handling, retries, optimistic updates.</p>`],
-["Caching Strategies",`<p>Browser cache, CDN, memory cache, React Query cache, invalidation.</p>`],
-["Rendering Models",`<p>CSR, SSR, SSG, ISR, React Server Components and hydration.</p>`],
-["Performance",`<p>Code splitting, lazy loading, virtualization, memoization, bundle analysis.</p>`],
-["Auth & Security",`<p>JWTs, cookies, OAuth, XSS, CSRF, secure storage tradeoffs.</p>`],
-["Design Systems",`<p>Tokens, components, accessibility, versioning, governance.</p>`],
-["Realtime Apps",`<p>WebSockets, collaboration, notifications, conflict resolution.</p>`],
-["Micro Frontends",`<p>Module federation, deployment independence, ownership.</p>`],
-["Observability",`<p>Logging, metrics, tracing, frontend monitoring, Core Web Vitals.</p>`],
-["Interview Masterclass",`<p>Design Slack, Netflix, YouTube, dashboards, chat apps. Use requirements → architecture → tradeoffs.</p>`]
-];
-const mods=document.getElementById('mods'), content=document.getElementById('content');
-let done=JSON.parse(localStorage.getItem('fsd_done')||'{}');
-function render(){
-mods.innerHTML=''; content.innerHTML='';
-modules.forEach((m,i)=>{
-const li=document.createElement('li');
-li.innerHTML=`<button onclick="show(${i})">${m[0]}</button> ${done[i]?'✅':''}`;
-mods.appendChild(li);
-const d=document.createElement('div'); d.className='card lesson'; d.id='l'+i;
-d.innerHTML=`<h2>${m[0]}</h2>${m[1]}<hr><h3>Knowledge Check</h3><p>Write notes and explain this topic in your own words.</p><button onclick="complete(${i})">Mark Complete</button>`;
-content.appendChild(d);
-});
-let pct=Math.round(Object.keys(done).length/modules.length*100);
-document.getElementById('progress').innerText=`Progress: ${pct}%`;
-}
-function show(i){document.querySelectorAll('.lesson').forEach(x=>x.classList.remove('active'));document.getElementById('l'+i).classList.add('active');}
-function complete(i){done[i]=true;localStorage.setItem('fsd_done',JSON.stringify(done));render();show(i);}
-render(); show(0);
-</script></body></html>
+    <nav class="nav" id="main-nav">
+        <div class="nav-inner">
+            <a href="#" class="nav-brand" data-navigate="dashboard">
+                <span class="nav-logo">🏗️</span>
+                <span class="nav-title">FSD Academy</span>
+            </a>
+            <div class="nav-links">
+                <a href="#" data-navigate="dashboard" class="nav-link active">Dashboard</a>
+                <a href="#" data-navigate="modules" class="nav-link">Modules</a>
+                <a href="#" data-navigate="interviews" class="nav-link">Interviews</a>
+                <a href="#" data-navigate="case-studies" class="nav-link">Case Studies</a>
+            </div>
+            <button class="nav-menu-btn" id="nav-menu-btn" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+        <div class="nav-mobile" id="nav-mobile">
+            <a href="#" data-navigate="dashboard" class="nav-link active">Dashboard</a>
+            <a href="#" data-navigate="modules" class="nav-link">Modules</a>
+            <a href="#" data-navigate="interviews" class="nav-link">Interviews</a>
+            <a href="#" data-navigate="case-studies" class="nav-link">Case Studies</a>
+        </div>
+    </nav>
+
+    <main class="main" id="app">
+        <!-- Content rendered by JavaScript -->
+    </main>
+
+    <footer class="footer">
+        <p>Frontend System Design Academy &mdash; Free &amp; Open Source</p>
+        <p class="footer-sub">Built for engineers preparing for frontend system design interviews</p>
+    </footer>
+
+    <script src="data.js"></script>
+    <script src="interviews.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
